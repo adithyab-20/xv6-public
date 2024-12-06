@@ -87,6 +87,16 @@ exec(char *path, char **argv)
   if(copyout(pgdir, sp, ustack, (3+argc+1)*4) < 0)
     goto bad;
 
+  
+  // Trace exec before updating process name
+  if (curproc->strace_on) {
+    cprintf("TRACE: pid = %d | command_name = %s | syscall = exec\n",
+            curproc->pid, curproc->name);
+
+  }
+
+  curproc->skip_next_trace = 1;
+
   // Save program name for debugging.
   for(last=s=path; *s; s++)
     if(*s == '/')

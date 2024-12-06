@@ -89,3 +89,30 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+
+// int
+// sys_strace_on(void)
+// {
+//     struct proc *p = myproc();
+//     p->strace_on = 1; // Enable strace
+//     return 0;
+// }
+
+int
+sys_strace(void)
+{
+    int mode; // 1 = enable, 0 = disable
+
+    if (argint(0, &mode) < 0) {
+        return -1; // Invalid argument
+    }
+
+    // cprintf("sys_strace: mode = %d\n", mode);
+
+    struct proc *curproc = myproc();
+    curproc->strace_on = mode; // Set the tracing flag
+
+    // cprintf("curproc->strace_on = %d\n", curproc->strace_on);
+    return 0;
+}

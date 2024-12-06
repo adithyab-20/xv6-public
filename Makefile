@@ -181,6 +181,7 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+	_hello\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -264,6 +265,7 @@ dist:
 	sed '/CUT HERE/,$$d' Makefile >dist/Makefile
 	echo >dist/runoff.spec
 	cp $(EXTRA) dist
+
 
 dist-test:
 	rm -rf dist

@@ -49,11 +49,26 @@ struct backcmd {
   struct cmd *cmd;
 };
 
+int strncmp(const char *s1, const char *s2, int n) {
+    while (n > 0 && *s1 && *s2 && *s1 == *s2) {
+        s1++;
+        s2++;
+        n--;
+    }
+    if (n == 0) {
+        return 0;
+    }
+    return (unsigned char)*s1 - (unsigned char)*s2;
+}
+
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
 
-// Execute cmd.  Never returns.
+// Global flag to track whether strace is enabled for the next command
+int strace_flag = 0;
+
+// Execute cmd. Never returns.
 void
 runcmd(struct cmd *cmd)
 {
@@ -75,6 +90,13 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit();
+
+    // Apply tracing if enabled
+    if (strace_flag) {
+      strace(1);  // Enable tracing for the next command
+      strace_flag = 0;  // Reset the flag after applying tracing
+    }
+
     exec(ecmd->argv[0], ecmd->argv);
     printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
@@ -157,13 +179,20 @@ main(void)
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
-    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Chdir must be called by the parent, not the child.
-      buf[strlen(buf)-1] = 0;  // chop \n
-      if(chdir(buf+3) < 0)
-        printf(2, "cannot cd %s\n", buf+3);
-      continue;
+    if(strncmp(buf, "strace on", 9) == 0){
+      // strace(1);        // Enable tracing for the shell process
+      strace_flag = 1;  // Also enable tracing for the next command
+      // printf(1, "Tracing enabled\n");
+      continue;         // Skip command execution
     }
+
+    if(strncmp(buf, "strace off", 10) == 0){
+      // strace(0);        // Disable tracing for the shell process
+      strace_flag = 0;  // Disable tracing for subsequent commands
+      // printf(1, "Tracing disabled\n");
+      continue;         // Skip command execution
+    }
+
     if(fork1() == 0)
       runcmd(parsecmd(buf));
     wait();
@@ -256,6 +285,7 @@ backcmd(struct cmd *subcmd)
   cmd->cmd = subcmd;
   return (struct cmd*)cmd;
 }
+
 //PAGEBREAK!
 // Parsing
 

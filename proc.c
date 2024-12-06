@@ -177,6 +177,51 @@ growproc(int n)
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
+// int
+// fork(void)
+// {
+//   int i, pid;
+//   struct proc *np;
+//   struct proc *curproc = myproc();
+
+//   // Allocate process.
+//   if((np = allocproc()) == 0){
+//     return -1;
+//   }
+
+//   // Copy process state from proc.
+//   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
+//     kfree(np->kstack);
+//     np->kstack = 0;
+//     np->state = UNUSED;
+//     return -1;
+//   }
+//   np->sz = curproc->sz;
+//   np->parent = curproc;
+//   *np->tf = *curproc->tf;
+
+//   // Clear %eax so that fork returns 0 in the child.
+//   np->tf->eax = 0;
+
+//   for(i = 0; i < NOFILE; i++)
+//     if(curproc->ofile[i])
+//       np->ofile[i] = filedup(curproc->ofile[i]);
+//   np->cwd = idup(curproc->cwd);
+
+//   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+
+//   pid = np->pid;
+
+//   acquire(&ptable.lock);
+
+//   np->state = RUNNABLE;
+
+//   release(&ptable.lock);
+
+//   return pid;
+// }
+
+
 int
 fork(void)
 {
@@ -210,6 +255,13 @@ fork(void)
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
+  // Handle strace_on flag
+  np->strace_on = curproc->strace_on; // Inherit parent's strace_on flag
+
+  // // Debugging: Print strace_on status
+  // cprintf("fork: Parent pid = %d | Child pid = %d | Parent strace_on = %d | Child strace_on = %d\n",
+  //         curproc->pid, np->pid, curproc->strace_on, np->strace_on);
+
   pid = np->pid;
 
   acquire(&ptable.lock);
@@ -221,6 +273,7 @@ fork(void)
   return pid;
 }
 
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
@@ -230,6 +283,11 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
+
+  if (curproc->strace_on) {
+    cprintf("TRACE: pid = %d | command_name = %s | syscall = exit\n",
+            curproc->pid, curproc->name);
+  }
 
   if(curproc == initproc)
     panic("init exiting");
