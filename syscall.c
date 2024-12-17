@@ -129,6 +129,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_strace(void);
+extern int sys_stracedump(void);
 
 
 
@@ -155,6 +156,7 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_strace] sys_strace,
+[SYS_stracedump] sys_stracedump,
 };
 
 // void
@@ -197,6 +199,8 @@ syscall(void)
                 syscall_name = syscall_names[num];
             }
 
+            record_trace_event(curproc->pid, curproc->name, syscall_name, retval);
+
             // Print trace information
             cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",
                     curproc->pid, curproc->name, syscall_name, retval);
@@ -207,6 +211,7 @@ syscall(void)
     } else {
         // Handle unknown system calls
         if (curproc->strace_on) {
+            record_trace_event(curproc->pid, curproc->name, "unknown", -1);
             cprintf("TRACE: pid = %d | command_name = %s | unknown syscall %d\n",
                     curproc->pid, curproc->name, num);
         } else {

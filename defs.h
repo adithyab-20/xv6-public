@@ -188,3 +188,8 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+
+void traceinit(void);
+void record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval);
+// int sys_stracedump(void);

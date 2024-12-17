@@ -777,6 +777,11 @@ main(void)
       continue;         // Skip command execution
     }
 
+    if(strncmp(buf, "strace dump", 11) == 0) {
+      stracedump();
+      continue;
+    }
+    
     // Handle "strace run <command>" command
     if(strncmp(buf, "strace run ", 11) == 0){
       char *cmd = buf + 11; // Extract the actual command
