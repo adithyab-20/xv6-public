@@ -100,10 +100,10 @@ sys_stracedump(void)
 
         if (e->pid != 0) {
             if (e->retval == -2) {
-                cprintf("EVENT %d: pid=%d, command_name=%s, syscall=%s\n",
+                cprintf("EVENT %d: pid=%d | command_name = %s | syscall=%s\n",
                     i, e->pid, e->command_name, e->syscall_name);
             } else {
-                cprintf("EVENT %d: pid=%d, command_name=%s, syscall=%s, return_value=%d\n",
+                cprintf("EVENT %d: pid=%d | command_name = %s | syscall=%s | return value=%d\n",
                     i, e->pid, e->command_name, e->syscall_name, e->retval);
             }
         }
