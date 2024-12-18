@@ -71,14 +71,8 @@ is_exit_syscall(const char *sys_name)
 }
 
 void
-record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval, int is_exit, const char *filter_name)
+record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval)
 {
-
-    if(is_exit && filter_name[0] != '\0'&& (strncmp(filter_name, "exit", 4) != 0)){
-            return;
-        }
-
-    else {
         acquire(&tracelock);
         events[event_index].pid = pid;
         safestrcpy(events[event_index].command_name, cmd_name, sizeof(events[event_index].command_name));
@@ -90,7 +84,6 @@ record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retv
             total_recorded_events++;
         }
         release(&tracelock);
-        }
     
    }
 
@@ -241,7 +234,7 @@ record_all_traces(int pid, int ppid, const char *cmd_name, const char *sys_name,
 {
     int is_exit = is_exit_syscall(sys_name);
 
-    record_trace_event(pid, cmd_name, sys_name, retval, is_exit, filter_name);
+    // record_trace_event(pid, cmd_name, sys_name, retval);
     record_buffered_trace(pid, ppid, cmd_name, sys_name, retval, is_exit, filter_name);
 
 }

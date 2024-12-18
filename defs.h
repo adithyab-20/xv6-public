@@ -191,6 +191,6 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 
 void traceinit(void);
-void record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval, int is_exit, const char *filter_name);
+void record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval);
 void record_all_traces(int pid, int ppid, const char*, const char*, int, const char*);
 

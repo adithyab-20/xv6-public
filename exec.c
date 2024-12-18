@@ -97,6 +97,8 @@ exec(char *path, char **argv)
     // int ppid = curproc->parent ? curproc->parent->pid : 0;
     // record_all_traces(curproc->pid, ppid, curproc->name, "exec", -2);
 
+    record_trace_event(curproc->pid, curproc->name, "exec", -2);
+
     if (curproc->strace_filter[0] == '\0' || 
                 strncmp(curproc->strace_filter, "exec", sizeof(curproc->strace_filter)) == 0) {
                 int ppid = curproc->parent ? curproc->parent->pid : 0;

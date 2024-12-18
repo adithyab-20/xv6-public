@@ -182,6 +182,8 @@ syscall(void)
         //     cprintf("syscall: pid=%d, filter=%s, syscall=%s\n",
         // curproc->pid, curproc->strace_filter, syscall_name);
 
+        record_trace_event(curproc->pid, curproc->name, syscall_name, retval);
+
         if (curproc->strace_filter[0] == '\0' || 
                 strncmp(curproc->strace_filter, syscall_name, sizeof(curproc->strace_filter)) == 0) {
                 int ppid = curproc->parent ? curproc->parent->pid : 0;
@@ -194,6 +196,8 @@ syscall(void)
         curproc->tf->eax = retval;
     } else {
         if (curproc->strace_on) {
+
+          record_trace_event(curproc->pid, curproc->name,  "unknown", -1);
             int ppid = curproc->parent ? curproc->parent->pid : 0;
             record_all_traces(curproc->pid, ppid, curproc->name, "unknown", -1, curproc->strace_filter);
         } else {

@@ -297,6 +297,9 @@ exit(void)
     //             strncmp(curproc->strace_filter, "exit", sizeof(curproc->strace_filter)) == 0) {
                   
     //             }
+
+    record_trace_event(curproc->pid, curproc->name, "exit", -2);
+    
     int ppid = curproc->parent ? curproc->parent->pid : 0;
     record_all_traces(curproc->pid, ppid,  curproc->name, "exit", -2, curproc->strace_filter);
 
