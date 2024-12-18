@@ -91,14 +91,6 @@ sys_uptime(void)
 }
 
 
-// int
-// sys_strace_on(void)
-// {
-//     struct proc *p = myproc();
-//     p->strace_on = 1; // Enable strace
-//     return 0;
-// }
-
 int
 sys_strace(void)
 {

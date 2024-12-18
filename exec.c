@@ -91,9 +91,11 @@ exec(char *path, char **argv)
   // Trace exec before updating process name
  
   if (curproc->strace_on) {
-    record_trace_event(curproc->pid, curproc->name, "exec", -2);
-    cprintf("TRACE: pid = %d | command_name = %s | syscall = exec\n",
-            curproc->pid, curproc->name);
+    // record_trace_event(curproc->pid, curproc->name, "exec", -2);
+    // cprintf("TRACE: pid = %d | command_name = %s | syscall = exec\n",
+    //         curproc->pid, curproc->name);
+    int ppid = curproc->parent ? curproc->parent->pid : 0;
+    record_all_traces(curproc->pid, ppid, curproc->name, "exec", -2);
 
   }
 

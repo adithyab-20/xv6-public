@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "fcntl.h": "c",
-        "spinlock.h": "c"
+        "spinlock.h": "c",
+        "traps.h": "c",
+        "types.h": "c",
+        "x86.h": "c"
     }
 }

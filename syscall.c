@@ -159,20 +159,52 @@ static int (*syscalls[])(void) = {
 [SYS_stracedump] sys_stracedump,
 };
 
+
+
 // void
 // syscall(void)
 // {
-//   int num;
-//   struct proc *curproc = myproc();
+//     int num;
+//     struct proc *curproc = myproc();
 
-//   num = curproc->tf->eax;
-//   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-//     curproc->tf->eax = syscalls[num]();
-//   } else {
-//     cprintf("%d %s: unknown sys call %d\n",
-//             curproc->pid, curproc->name, num);
-//     curproc->tf->eax = -1;
-//   }
+//     // Retrieve system call number from %eax
+//     num = curproc->tf->eax;
+
+//     if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+//         // Execute the system call
+//         int retval = syscalls[num]();
+
+//         // Only log if tracing is enabled and skip flag is not set
+//         if (curproc->skip_next_trace) {
+//             curproc->skip_next_trace = 0;  // Clear the flag
+//         } else if (curproc->strace_on) {
+//             // Lookup system call name
+//             char *syscall_name = "unknown";
+//             if (num < NELEM(syscall_names) && syscall_names[num]) {
+//                 syscall_name = syscall_names[num];
+//             }
+
+//             record_trace_event(curproc->pid, curproc->name, syscall_name, retval);
+
+//             // Print trace information
+//             cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",
+//                     curproc->pid, curproc->name, syscall_name, retval);
+//         }
+
+//         // Store return value back in %eax
+//         curproc->tf->eax = retval;
+//     } else {
+//         // Handle unknown system calls
+//         if (curproc->strace_on) {
+//             record_trace_event(curproc->pid, curproc->name, "unknown", -1);
+//             cprintf("TRACE: pid = %d | command_name = %s | unknown syscall %d\n",
+//                     curproc->pid, curproc->name, num);
+//         } else {
+//             cprintf("%d %s: unknown sys call %d\n",
+//                     curproc->pid, curproc->name, num);
+//         }
+//         curproc->tf->eax = -1;  // Set return value for unknown syscalls
+//     }
 // }
 
 
@@ -182,81 +214,35 @@ syscall(void)
     int num;
     struct proc *curproc = myproc();
 
-    // Retrieve system call number from %eax
     num = curproc->tf->eax;
-
     if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-        // Execute the system call
         int retval = syscalls[num]();
 
-        // Only log if tracing is enabled and skip flag is not set
         if (curproc->skip_next_trace) {
-            curproc->skip_next_trace = 0;  // Clear the flag
+            curproc->skip_next_trace = 0;
         } else if (curproc->strace_on) {
-            // Lookup system call name
             char *syscall_name = "unknown";
             if (num < NELEM(syscall_names) && syscall_names[num]) {
                 syscall_name = syscall_names[num];
             }
 
-            record_trace_event(curproc->pid, curproc->name, syscall_name, retval);
+            int ppid = curproc->parent ? curproc->parent->pid : 0;
 
-            // Print trace information
-            cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",
-                    curproc->pid, curproc->name, syscall_name, retval);
+            // Use the new combined trace recording function
+            record_all_traces(curproc->pid, ppid, curproc->name, syscall_name, retval);
+
         }
 
-        // Store return value back in %eax
         curproc->tf->eax = retval;
     } else {
-        // Handle unknown system calls
         if (curproc->strace_on) {
-            record_trace_event(curproc->pid, curproc->name, "unknown", -1);
-            cprintf("TRACE: pid = %d | command_name = %s | unknown syscall %d\n",
-                    curproc->pid, curproc->name, num);
+            int ppid = curproc->parent ? curproc->parent->pid : 0;
+            record_all_traces(curproc->pid, ppid, curproc->name, "unknown", -1);
+
         } else {
             cprintf("%d %s: unknown sys call %d\n",
                     curproc->pid, curproc->name, num);
         }
-        curproc->tf->eax = -1;  // Set return value for unknown syscalls
+        curproc->tf->eax = -1;
     }
 }
-
-
-// void
-// syscall(void)
-// {
-//     int num;
-//     struct proc *curproc = myproc();
-
-//     // Retrieve the syscall number
-//     num = curproc->tf->eax;
-
-//     if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-//         // Execute the syscall and capture the return value
-//         int retval = syscalls[num]();
-
-//         // Trace only if enabled
-//         if (curproc->strace_on) {
-//             char *syscall_name = "unknown";
-//             if (num < NELEM(syscall_names) && syscall_names[num]) {
-//                 syscall_name = syscall_names[num];
-//             }
-
-//             // Print syscall trace information
-//             cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",
-//                     curproc->pid, curproc->name, syscall_name, retval);
-//         }
-
-//         curproc->tf->eax = retval; // Set return value
-//     } else {
-//         if (curproc->strace_on) {
-//             cprintf("TRACE: pid = %d | command_name = %s | unknown syscall %d\n",
-//                     curproc->pid, curproc->name, num);
-//         } else {
-//             cprintf("%d %s: unknown sys call %d\n",
-//                     curproc->pid, curproc->name, num);
-//         }
-//         curproc->tf->eax = -1; // Unknown syscall
-//     }
-// }
