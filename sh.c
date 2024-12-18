@@ -13,6 +13,17 @@
 
 #define MAXARGS 10
 
+static const char *valid_syscalls[] = {
+    "fork", "exit", "wait", "pipe", "read", "kill", "exec",
+    "fstat", "chdir", "dup", "getpid", "sbrk", "sleep",
+    "uptime", "open", "write", "mknod", "unlink", "link",
+    "mkdir", "close", "strace", "stracedump", "strace_filter"
+};
+
+#define NUM_SYSCALLS (sizeof(valid_syscalls) / sizeof(valid_syscalls[0]))
+
+extern const char *syscall_names[];
+
 struct cmd {
   int type;
 };
@@ -60,6 +71,16 @@ int strncmp(const char *s1, const char *s2, int n) {
     }
     return (unsigned char)*s1 - (unsigned char)*s2;
 }
+
+int is_valid_syscall_name(const char *name) {
+    for (int i = 0; i < NUM_SYSCALLS; i++) {
+        if (strcmp(name, valid_syscalls[i]) == 0) {
+            return 1;  // Match found
+        }
+    }
+    return 0;  // No match
+}
+
 
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
@@ -165,61 +186,7 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
-// int
-// main(void)
-// {
-//   static char buf[100];
-//   int fd;
 
-//   // Ensure that three file descriptors are open.
-//   while((fd = open("console", O_RDWR)) >= 0){
-//     if(fd >= 3){
-//       close(fd);
-//       break;
-//     }
-//   }
-
-//   // Read and run input commands.
-//   while(getcmd(buf, sizeof(buf)) >= 0){
-//     // Handle the "cd" command directly in the shell process
-//     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-//       buf[strlen(buf)-1] = 0;  // Remove the trailing newline character
-//       if(chdir(buf+3) < 0)     // Attempt to change directory
-//         printf(2, "cannot cd %s\n", buf+3);  // Print error on failure
-//       continue;                // Skip further command processing
-//     }
-
-//     // Handle "strace on" command
-//     if(strncmp(buf, "strace on", 9) == 0){
-//       strace_flag = 1;  // Enable tracing for the next command
-//       continue;         // Skip command execution
-//     }
-
-//     // Handle "strace off" command
-//     if(strncmp(buf, "strace off", 10) == 0){
-//       strace_flag = 0;  // Disable tracing for subsequent commands
-//       continue;         // Skip command execution
-//     }
-
-//     if(strncmp(buf, "strace run ", 11) == 0){
-//       strace(1); // Turn on strace for this process
-//       char *cmd = buf + 11; // Extract the actual command
-//       if(fork1() == 0) {
-//         runcmd(parsecmd(cmd)); // Run the command with tracing
-//       }
-//       wait();
-//       strace(0); // Turn off strace after command execution
-//       continue;
-//     }
-
-
-//     // Run other commands
-//     if(fork1() == 0)
-//       runcmd(parsecmd(buf));
-//     wait();
-//   }
-//   exit();
-// }
 
 int
 main(void)
@@ -268,10 +235,17 @@ main(void)
       }
       filter_syscall[i] = '\0';
 
-     if (strlen(filter_syscall) > 0) {
+    //  if (strlen(filter_syscall) > 0) {
+    //     filter_flag = 1;  // Mark that a filter is set
+    // } else {
+    //     printf(2, "Invalid filter for strace -e\n");  // Handle empty filter gracefully
+    // }
+
+    if (strlen(filter_syscall) > 0 && is_valid_syscall_name(filter_syscall)) {
         filter_flag = 1;  // Mark that a filter is set
     } else {
-        printf(2, "Invalid filter for strace -e\n");  // Handle empty filter gracefully
+        printf(2, "Invalid filter: no such system call '%s'\n", filter_syscall);
+        filter_syscall[0] = '\0';  // Clear invalid filter
     }
 
     continue;
