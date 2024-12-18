@@ -87,21 +87,6 @@ traceinit(void)
 //   return (uchar)*p - (uchar)*q;
 // }
 
-void
-record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval)
-{
-    acquire(&tracelock);
-    events[event_index].pid = pid;
-    safestrcpy(events[event_index].command_name, cmd_name, sizeof(events[event_index].command_name));
-    safestrcpy(events[event_index].syscall_name, sys_name, sizeof(events[event_index].syscall_name));
-    events[event_index].retval = retval;
-
-    event_index = (event_index + 1) % N;
-    if (total_recorded_events < N) {
-        total_recorded_events++;
-    }
-    release(&tracelock);
-}
 
 
 static int
@@ -109,6 +94,31 @@ is_exit_syscall(const char *sys_name)
 {
     return strncmp(sys_name, "exit", 4) == 0;
 }
+
+void
+record_trace_event(int pid, const char *cmd_name, const char *sys_name, int retval, int is_exit, const char *filter_name)
+{
+
+    if(is_exit && filter_name[0] != '\0'&& (strncmp(filter_name, "exit", 4) != 0)){
+            return;
+        }
+
+    else {
+        acquire(&tracelock);
+        events[event_index].pid = pid;
+        safestrcpy(events[event_index].command_name, cmd_name, sizeof(events[event_index].command_name));
+        safestrcpy(events[event_index].syscall_name, sys_name, sizeof(events[event_index].syscall_name));
+        events[event_index].retval = retval;
+
+        event_index = (event_index + 1) % N;
+        if (total_recorded_events < N) {
+            total_recorded_events++;
+        }
+        release(&tracelock);
+        }
+    
+   }
+
 
 
 // static int
@@ -212,10 +222,56 @@ is_exit_syscall(const char *sys_name)
 
 
 void
-record_buffered_trace(int pid, int ppid, const char *cmd_name, const char *sys_name, int retval, int is_exit)
+record_buffered_trace(int pid, int ppid, const char *cmd_name, const char *sys_name, int retval, int is_exit, const char *filter_name)
 {
+
     acquire(&bufferlock);
+
+    if (is_exit && filter_name[0] != '\0'&& (strncmp(filter_name, "exit", 4) != 0))
+    {
+         // Print traces when a monitored process exits and it has a parent
+    // This ensures we print when child processes finish but not when the shell exits
+    if (is_exit && ppid != 0) {
+        cprintf("\n--- System Call Traces ---\n");
+        
+        // Print all buffered traces
+        for (int i = 0; i < buffer_index; i++) {
+            struct buffered_trace *t = &buffered_events[i];
+            // Only print traces for this process and its parent
+            if (t->pid == pid || t->pid == ppid) {
+                if (t->retval == -2) {
+                    cprintf("TRACE: pid=%d | command_name=%s | syscall=%s\n",
+                        t->pid, t->command_name, t->syscall_name);
+                } else {
+                    cprintf("TRACE: pid=%d | command_name=%s | syscall=%s | return value=%d\n",
+                        t->pid, t->command_name, t->syscall_name, t->retval);
+                }
+            }
+        }
+        
+        // Reset buffer
+        buffer_index = 0;
+        trace_sequence = 0;
+    }
     
+    // Also print when parent process exits with traces
+    if (is_exit && ppid == 0 && buffer_index > 0) {
+        cprintf("\n--- System Call Traces ---\n");
+        for (int i = 0; i < buffer_index; i++) {
+            struct buffered_trace *t = &buffered_events[i];
+            if (t->retval == -2) {
+                cprintf("TRACE: pid=%d | command_name=%s | syscall=%s\n",
+                    t->pid, t->command_name, t->syscall_name);
+            } else {
+                cprintf("TRACE: pid=%d | command_name=%s | syscall=%s | return value=%d\n",
+                    t->pid, t->command_name, t->syscall_name, t->retval);
+            }
+        }
+        buffer_index = 0;
+        trace_sequence = 0;
+    }}
+    
+    else {
     if (buffer_index < BUFFER_SIZE) {
         struct buffered_trace *trace = &buffered_events[buffer_index];
         trace->pid = pid;
@@ -268,9 +324,11 @@ record_buffered_trace(int pid, int ppid, const char *cmd_name, const char *sys_n
         buffer_index = 0;
         trace_sequence = 0;
     }
-    
+    }
     release(&bufferlock);
 }
+
+
 
 int
 sys_stracedump(void)
@@ -303,10 +361,15 @@ sys_stracedump(void)
 }
 
 void
-record_all_traces(int pid, int ppid, const char *cmd_name, const char *sys_name, int retval)
+record_all_traces(int pid, int ppid, const char *cmd_name, const char *sys_name, int retval, const char *filter_name)
 {
     int is_exit = is_exit_syscall(sys_name);
-    record_trace_event(pid, cmd_name, sys_name, retval);
-    record_buffered_trace(pid, ppid, cmd_name, sys_name, retval, is_exit);
+
+    // if (is_exit && (strncmp(filter_name, "exit", 4) == 0))
+    // {
+
+    record_trace_event(pid, cmd_name, sys_name, retval, is_exit, filter_name);
+    record_buffered_trace(pid, ppid, cmd_name, sys_name, retval, is_exit, filter_name);
+
 }
 

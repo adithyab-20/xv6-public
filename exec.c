@@ -94,8 +94,15 @@ exec(char *path, char **argv)
     // record_trace_event(curproc->pid, curproc->name, "exec", -2);
     // cprintf("TRACE: pid = %d | command_name = %s | syscall = exec\n",
     //         curproc->pid, curproc->name);
-    int ppid = curproc->parent ? curproc->parent->pid : 0;
-    record_all_traces(curproc->pid, ppid, curproc->name, "exec", -2);
+    // int ppid = curproc->parent ? curproc->parent->pid : 0;
+    // record_all_traces(curproc->pid, ppid, curproc->name, "exec", -2);
+
+    if (curproc->strace_filter[0] == '\0' || 
+                strncmp(curproc->strace_filter, "exec", sizeof(curproc->strace_filter)) == 0) {
+                int ppid = curproc->parent ? curproc->parent->pid : 0;
+                //  cprintf("TRACE: syscall %s matched filter %s\n", syscall_name, curproc->strace_filter);
+                record_all_traces(curproc->pid, ppid, curproc->name, "exec", -2, curproc->strace_filter);
+            }
 
   }
 

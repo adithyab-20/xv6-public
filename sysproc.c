@@ -108,3 +108,19 @@ sys_strace(void)
     // cprintf("curproc->strace_on = %d\n", curproc->strace_on);
     return 0;
 }
+
+int
+sys_strace_filter(void)
+{
+    char *filter;
+    if (argstr(0, &filter) < 0)
+        return -1;
+
+
+    struct proc *curproc = myproc();
+    safestrcpy(curproc->strace_filter, filter, sizeof(curproc->strace_filter));
+
+    // cprintf("curproc->strace_filter = %s and filter = %s\n", curproc->strace_filter, filter);
+    return 0;
+}
+

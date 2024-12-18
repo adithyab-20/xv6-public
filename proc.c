@@ -257,6 +257,8 @@ fork(void)
 
   // Handle strace_on flag
   np->strace_on = curproc->strace_on; // Inherit parent's strace_on flag
+  safestrcpy(np->strace_filter, curproc->strace_filter, sizeof(curproc->strace_filter));
+
 
   // // Debugging: Print strace_on status
   // cprintf("fork: Parent pid = %d | Child pid = %d | Parent strace_on = %d | Child strace_on = %d\n",
@@ -288,8 +290,23 @@ exit(void)
     // record_trace_event(curproc->pid, curproc->name, "exit", -2);
     // cprintf("TRACE: pid = %d | command_name = %s | syscall = exit\n",
     //         curproc->pid, curproc->name);
+
+   
+    
+    // if (curproc->strace_filter[0] == '\0' || 
+    //             strncmp(curproc->strace_filter, "exit", sizeof(curproc->strace_filter)) == 0) {
+                  
+    //             }
     int ppid = curproc->parent ? curproc->parent->pid : 0;
-    record_all_traces(curproc->pid, ppid,  curproc->name, "exit", -2);
+    record_all_traces(curproc->pid, ppid,  curproc->name, "exit", -2, curproc->strace_filter);
+
+
+    // if (curproc->strace_filter[0] == '\0' || 
+    //             strncmp(curproc->strace_filter, "exit", sizeof(curproc->strace_filter)) == 0) {
+    //             int ppid = curproc->parent ? curproc->parent->pid : 0;
+    //             //  cprintf("TRACE: syscall %s matched filter %s\n", syscall_name, curproc->strace_filter);
+    //             record_all_traces(curproc->pid, ppid, curproc->name, "exit", -2);
+    //         }
   }
 
   if(curproc == initproc)

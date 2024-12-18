@@ -67,6 +67,8 @@ struct cmd *parsecmd(char*);
 
 // Global flag to track whether strace is enabled for the next command
 int strace_flag = 0;
+int filter_flag = 0;
+char filter_syscall[16];  
 
 // Execute cmd. Never returns.
 void
@@ -255,6 +257,26 @@ main(void)
       continue;         // Skip command execution
     }
 
+    if (strncmp(buf, "strace -e ", 10) == 0) {
+
+      char *p = buf + 10;
+      int i = 0;
+      
+      // Extract syscall name
+      while(*p && *p != '\n' && i < sizeof(filter_syscall) - 1) {
+        filter_syscall[i++] = *p++;
+      }
+      filter_syscall[i] = '\0';
+
+     if (strlen(filter_syscall) > 0) {
+        filter_flag = 1;  // Mark that a filter is set
+    } else {
+        printf(2, "Invalid filter for strace -e\n");  // Handle empty filter gracefully
+    }
+
+    continue;
+    }
+
     if(strncmp(buf, "strace dump", 11) == 0) {
       stracedump();
       continue;
@@ -282,12 +304,30 @@ main(void)
     if(fork1() == 0) {
       // Apply tracing if enabled for the next command
       if (strace_flag) {
-        strace(1);  // Enable tracing for the next command
-        strace_flag = 0;  // Reset the flag after applying tracing
+
+        if (filter_flag)
+        {
+          // printf(1, "filter: %s\n", filter_syscall);
+          strace_filter(filter_syscall);  // Set the filter
+          
+        }
+        else {
+          // printf(1, "Getting called\n");
+          strace(1);
+          strace_flag = 0;
+        }
+
       }
       runcmd(parsecmd(buf));
     }
     wait();
+
+      if (filter_flag) {
+      strace(0);  // Disable tracing
+      filter_flag = 0;  // Reset filter flag
+      filter_syscall[0] = '\0';  // Clear filter
+      strace_filter("");
+    }
   }
   exit();
 }

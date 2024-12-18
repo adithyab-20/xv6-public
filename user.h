@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 int strace(int mode);
 int stracedump(void);
+void strace_filter(const char *filter);
 
 // ulib.c
 int stat(const char*, struct stat*);
